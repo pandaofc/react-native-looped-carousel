@@ -12,7 +12,6 @@ import {
 import PropTypes from 'prop-types';
 import isEqual from 'lodash.isequal';
 
-
 const PAGE_CHANGE_DELAY = 4000;
 
 // if ViewPropTypes is not defined fall back to View.propTypes (to support RN < 0.44)
@@ -21,7 +20,7 @@ const viewPropTypes = ViewPropTypes || View.propTypes;
 /**
  * Animates pages in cycle
  * (loop possible if children count > 1)
-*/
+ */
 export default class Carousel extends Component {
   static propTypes = {
     children: PropTypes.node.isRequired,
@@ -110,7 +109,7 @@ export default class Carousel extends Component {
     this._clearTimer();
   }
 
-  componentWillReceiveProps({ children }) {
+  componentDidUpdate({ children }) {
     if (!isEqual(this.props.children, children)) {
       const { currentPage } = this.state;
       this._clearTimer();
@@ -118,7 +117,8 @@ export default class Carousel extends Component {
       if (children) {
         childrenLength = React.Children.count(children) || 1;
       }
-      const nextPage = currentPage >= childrenLength ? childrenLength - 1 : currentPage;
+      const nextPage =
+        currentPage >= childrenLength ? childrenLength - 1 : currentPage;
       this.setState({ childrenLength }, () => {
         this.animateToPage(nextPage);
         this._setUpTimer();
@@ -144,12 +144,17 @@ export default class Carousel extends Component {
     } else if (children) {
       pages.push(children[0]);
     } else {
-      pages.push(<View><Text>
-          You are supposed to add children inside Carousel
-      </Text></View>);
+      pages.push(
+        <View>
+          <Text>You are supposed to add children inside Carousel</Text>
+        </View>,
+      );
     }
     return pages.map((page, i) => (
-      <TouchableWithoutFeedback style={[{ ...size }, pageStyle]} key={`page${i}`}>
+      <TouchableWithoutFeedback
+        style={[{ ...size }, pageStyle]}
+        key={`page${i}`}
+      >
         {page}
       </TouchableWithoutFeedback>
     ));
@@ -159,28 +164,28 @@ export default class Carousel extends Component {
     return this.state.currentPage;
   }
 
-  _setCurrentPage = (currentPage) => {
+  _setCurrentPage = currentPage => {
     this.setState({ currentPage }, () => {
       if (this.props.onAnimateNextPage) {
         // FIXME: called twice on ios with auto-scroll
         this.props.onAnimateNextPage(currentPage);
       }
     });
-  }
+  };
 
   _onScrollBegin = () => {
     this._clearTimer();
-  }
+  };
 
-  _onScrollEnd = (event) => {
+  _onScrollEnd = event => {
     const offset = { ...event.nativeEvent.contentOffset };
     const page = this._calculateCurrentPage(offset.x);
     this._placeCritical(page);
     this._setCurrentPage(page);
     this._setUpTimer();
-  }
+  };
 
-  _onScroll = (event) => {
+  _onScroll = event => {
     const currentOffset = event.nativeEvent.contentOffset.x;
     const direction = currentOffset > this.offset ? 'right' : 'left';
     this.offset = currentOffset;
@@ -191,18 +196,18 @@ export default class Carousel extends Component {
         this.props.onPageBeingChanged(this.nextPage);
       }
     }
-  }
+  };
 
-  _onLayout = (event) => {
+  _onLayout = event => {
     const { height, width } = event.nativeEvent.layout;
     this.setState({ size: { width, height } });
     // remove setTimeout wrapper when https://github.com/facebook/react-native/issues/6849 is resolved.
     setTimeout(() => this._placeCritical(this.state.currentPage), 0);
-  }
+  };
 
   _clearTimer = () => {
     clearTimeout(this.timer);
-  }
+  };
 
   _setUpTimer = () => {
     // only for cycling
@@ -210,7 +215,7 @@ export default class Carousel extends Component {
       this._clearTimer();
       this.timer = setTimeout(this._animateNextPage, this.props.delay);
     }
-  }
+  };
 
   _scrollTo = ({ offset, animated, nofix }) => {
     if (this.scrollView) {
@@ -221,7 +226,7 @@ export default class Carousel extends Component {
         this.scrollView.scrollTo({ y: 0, x: offset, animated: true });
       }
     }
-  }
+  };
 
   _animateNextPage = () => {
     const { currentPage } = this.state;
@@ -232,7 +237,7 @@ export default class Carousel extends Component {
       return;
     }
     this.animateToPage(nextPage);
-  }
+  };
 
   _animatePreviousPage = () => {
     const { currentPage } = this.state;
@@ -243,10 +248,14 @@ export default class Carousel extends Component {
       return;
     }
     this.animateToPage(nextPage);
-  }
+  };
 
-  animateToPage = (page) => {
-    const { currentPage, childrenLength, size: { width } } = this.state;
+  animateToPage = page => {
+    const {
+      currentPage,
+      childrenLength,
+      size: { width },
+    } = this.state;
     const { isLooped } = this.props;
     const nextPage = this._normalizePageNumber(page);
     this._clearTimer();
@@ -282,11 +291,14 @@ export default class Carousel extends Component {
     }
     this._setCurrentPage(nextPage);
     this._setUpTimer();
-  }
+  };
 
-  _placeCritical = (page) => {
+  _placeCritical = page => {
     const { isLooped } = this.props;
-    const { childrenLength, size: { width } } = this.state;
+    const {
+      childrenLength,
+      size: { width },
+    } = this.state;
     let offset = 0;
     // if page number is bigger then length - something is incorrect
     if (page < childrenLength) {
@@ -299,9 +311,9 @@ export default class Carousel extends Component {
     }
 
     this._scrollTo({ offset, animated: false });
-  }
+  };
 
-  _normalizePageNumber = (page) => {
+  _normalizePageNumber = page => {
     const { childrenLength } = this.state;
 
     if (page === childrenLength) {
@@ -312,54 +324,73 @@ export default class Carousel extends Component {
       return childrenLength - 1;
     }
     return page;
-  }
+  };
 
-  _calculateCurrentPage = (offset) => {
+  _calculateCurrentPage = offset => {
     const { width } = this.state.size;
     const page = Math.round(offset / width);
     return this._normalizePageNumber(page);
-  }
+  };
 
-  _calculateNextPage = (direction) => {
+  _calculateNextPage = direction => {
     const { width } = this.state.size;
     const ratio = this.offset / width;
     const page = direction === 'right' ? Math.ceil(ratio) : Math.floor(ratio);
     return this._normalizePageNumber(page);
-  }
+  };
 
-  _renderPageInfo = (pageLength) =>
-    (<View style={[styles.pageInfoBottomContainer, this.props.pageInfoBottomContainerStyle]} pointerEvents="none">
+  _renderPageInfo = pageLength => (
+    <View
+      style={[
+        styles.pageInfoBottomContainer,
+        this.props.pageInfoBottomContainerStyle,
+      ]}
+      pointerEvents="none"
+    >
       <View style={styles.pageInfoContainer}>
         <View
-          style={[styles.pageInfoPill, { backgroundColor: this.props.pageInfoBackgroundColor }]}
+          style={[
+            styles.pageInfoPill,
+            { backgroundColor: this.props.pageInfoBackgroundColor },
+          ]}
         >
-          <Text
-            style={[styles.pageInfoText, this.props.pageInfoTextStyle]}
-          >
-            {`${this.state.currentPage + 1}${this.props.pageInfoTextSeparator}${pageLength}`}
+          <Text style={[styles.pageInfoText, this.props.pageInfoTextStyle]}>
+            {`${this.state.currentPage + 1}${
+              this.props.pageInfoTextSeparator
+            }${pageLength}`}
           </Text>
         </View>
       </View>
-    </View>)
+    </View>
+  );
 
-  _renderBullets = (pageLength) => {
+  _renderBullets = pageLength => {
     const bullets = [];
     for (let i = 0; i < pageLength; i += 1) {
       bullets.push(
-        <TouchableWithoutFeedback onPress={() => this.animateToPage(i)} key={`bullet${i}`}>
+        <TouchableWithoutFeedback
+          onPress={() => this.animateToPage(i)}
+          key={`bullet${i}`}
+        >
           <View
-            style={i === this.state.currentPage ?
-              [styles.chosenBullet, this.props.chosenBulletStyle] :
-              [styles.bullet, this.props.bulletStyle]}
+            style={
+              i === this.state.currentPage
+                ? [styles.chosenBullet, this.props.chosenBulletStyle]
+                : [styles.bullet, this.props.bulletStyle]
+            }
           />
-        </TouchableWithoutFeedback>);
+        </TouchableWithoutFeedback>,
+      );
     }
     return (
-      <View style={[styles.bullets, this.props.bulletsContainerStyle]} pointerEvents="box-none">
+      <View
+        style={[styles.bullets, this.props.bulletsContainerStyle]}
+        pointerEvents="box-none"
+      >
         {bullets}
       </View>
     );
-  }
+  };
 
   _renderArrows = () => {
     let { currentPage } = this.state;
@@ -369,7 +400,10 @@ export default class Carousel extends Component {
     }
     return (
       <View style={styles.arrows} pointerEvents="box-none">
-        <View style={[styles.arrowsContainer, this.props.arrowsContainerStyle]} pointerEvents="box-none">
+        <View
+          style={[styles.arrowsContainer, this.props.arrowsContainerStyle]}
+          pointerEvents="box-none"
+        >
           <TouchableOpacity
             onPress={this._animatePreviousPage}
             style={this.props.arrowStyle}
@@ -389,7 +423,7 @@ export default class Carousel extends Component {
         </View>
       </View>
     );
-  }
+  };
 
   render() {
     const contents = this._setUpPages();
@@ -404,10 +438,13 @@ export default class Carousel extends Component {
     return (
       <View {...containerProps}>
         <ScrollView
-          ref={(c) => { this.scrollView = c; }}
+          ref={c => {
+            this.scrollView = c;
+          }}
           onScrollBeginDrag={this._onScrollBegin}
           onMomentumScrollEnd={this._onScrollEnd}
           onScroll={this._onScroll}
+          scrollEventThrottle={() => {}}
           alwaysBounceHorizontal={false}
           alwaysBounceVertical={false}
           contentInset={{ top: 0 }}
@@ -421,8 +458,10 @@ export default class Carousel extends Component {
             styles.horizontalScroll,
             this.props.contentContainerStyle,
             {
-              width: size.width * (childrenLength +
-                (childrenLength > 1 && this.props.isLooped ? 2 : 0)),
+              width:
+                size.width *
+                (childrenLength +
+                  (childrenLength > 1 && this.props.isLooped ? 2 : 0)),
               height: size.height,
             },
           ]}
